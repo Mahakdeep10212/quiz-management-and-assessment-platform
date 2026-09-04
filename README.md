@@ -1,97 +1,104 @@
-# Labmentix - Quiz Management & Online Assessment Platform
+# SkillPulse - Intelligent Quiz & Online Assessment Platform
 
-A production-quality full-stack online quiz and assessment platform built with Next.js, React, Tailwind CSS, Prisma, and PostgreSQL.
+A production-grade, full-stack online quiz and skill assessment platform built with Next.js 15, React 19, Tailwind CSS, Prisma, and PostgreSQL.
 
-## Features
+[![Repository](https://img.shields.io/badge/GitHub-SkillPulse-indigo.svg)](https://github.com/Mahakdeep10212/quiz-management-and-assessment-platform)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org/)
 
-### For Admins
-- Comprehensive Dashboard with Real-time Analytics and Charts
-- Manage Categories (Create, Edit, Delete)
-- Manage Quizzes (Create, Edit, Delete, Publish, Unpublish)
-- Manage Questions (Add, Edit, Delete MCQs with explanations)
-- Manage Users (View history, activate/deactivate accounts)
-- Configure Quiz settings (Duration, Passing Percentage, Max Attempts, Difficulty)
+---
 
-### For Students
-- Secure Registration and Login
-- Browse and Filter Published Quizzes
-- Timed Quiz Environment (Server-side validated timer to prevent cheating)
-- View Results immediately after submission (Score, Pass/Fail, Time Taken)
-- Detailed Review of answers with explanations
-- Personal Dashboard tracking performance and history
-- Global Leaderboard to compete with peers
+## ⚡ Highlights & Features
 
-## Tech Stack
-- **Frontend**: Next.js 15 (App Router), React, Tailwind CSS, Lucide React, Recharts, React Hook Form
-- **Backend**: Next.js Route Handlers (REST-style API)
+### 👨‍💼 For Administrators
+- **Real-Time Analytics & Dashboard**: Visual KPI metrics, attempt distribution charts, and completion stats powered by Recharts.
+- **Category & Topic Management**: Create, update, and manage customizable domain modules.
+- **Quiz Engine**: Configure durations, passing scores, maximum attempts, and difficulty tiers with draft/publish toggling.
+- **Question Bank with Explanations**: Manage multi-choice questions (MCQs), configurable options, and rationales.
+- **User Governance**: Audit user assessment histories and manage account access status.
+
+### 🎓 For Candidates & Students
+- **Smart Assessment Room**: Server-validated timer prevents local time tampering and triggers automatic submission upon expiration.
+- **Immediate Detailed Feedback**: Instant score calculation, pass/fail status, and question-by-question review with explanations.
+- **Performance Analytics**: Personalized dashboard tracking historical scores, accuracy percentages, and test trends.
+- **Global Leaderboard**: Benchmark ranking against peers across topics and domains.
+
+---
+
+## 🛠 Tech Stack
+
+- **Frontend**: Next.js 15 (App Router), React 19, Tailwind CSS, Lucide Icons, Recharts, React Hook Form
+- **Backend**: Next.js Route Handlers (Edge & Node runtime)
 - **Database**: PostgreSQL
-- **ORM**: Prisma
-- **Authentication**: Custom JWT (jose) and bcrypt with secure HTTP-only cookies
+- **ORM**: Prisma Client & Prisma Migrate
+- **Authentication**: Custom JWT encryption (`jose`), bcrypt password hashing, and secure HTTP-only cookies
+- **Testing**: Vitest, React Testing Library, and Playwright E2E
 
-## Architecture
-The application uses a monolithic full-stack approach with Next.js App Router.
-- `src/app/api`: Backend REST APIs protecting routes via session cookies.
-- `src/app/admin`: Protected admin-only dashboard and management UI.
-- `src/app/dashboard`, `/quizzes`, `/quiz`: Protected student routes.
-- `src/lib/auth.js`: Handles JWT encryption/decryption and bcrypt password hashing.
-- `src/middleware.js`: Edge middleware for Role-Based Access Control (RBAC).
+---
 
-## Database Schema Overview
-- **User**: Stores admin and student accounts.
-- **Category**: Classifies quizzes.
-- **Quiz**: The core assessment entity.
-- **Question & Option**: Stores MCQs. Options are linked to Questions.
-- **Attempt & Answer**: Tracks student sessions, scores, and specific selected answers.
+## 🚀 Getting Started
 
-## Setup Instructions
+### 1. Clone & Install Dependencies
+```bash
+git clone https://github.com/Mahakdeep10212/quiz-management-and-assessment-platform.git
+cd quiz-management-and-assessment-platform
+npm install
+```
 
-1. **Install dependencies**
-   ```bash
-   npm install
-   ```
+### 2. Configure Environment Variables
+Create a `.env` file in the project root:
+```env
+DATABASE_URL="postgresql://username:password@localhost:5432/skillpulse?schema=public"
+AUTH_SECRET="your-super-secret-jwt-key-change-this"
+```
 
-2. **Configure Environment Variables**
-   Rename `.env.example` to `.env` and configure your database connection:
-   ```env
-   DATABASE_URL="postgresql://username:password@localhost:5432/labmentix?schema=public"
-   AUTH_SECRET="your-super-secret-jwt-key"
-   ```
+### 3. Initialize the Database
+```bash
+# Push schema to PostgreSQL
+npx prisma db push
 
-3. **Initialize Database**
-   Push the schema to your database:
-   ```bash
-   npx prisma db push
-   ```
+# Generate Prisma client
+npx prisma generate
 
-4. **Generate Prisma Client**
-   ```bash
-   npx prisma generate
-   ```
+# Seed sample categories, quizzes, and questions
+npm run seed
+```
 
-5. **Seed Development Data**
-   Seed the database with sample users, categories, quizzes, and questions:
-   ```bash
-   npm run seed
-   ```
+### 4. Run Development Server
+```bash
+npm run dev
+```
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-6. **Start the Development Server**
-   ```bash
-   npm run dev
-   ```
+---
 
-## Development Login Credentials
-If you seeded the database using `npm run seed`, you can use the following credentials:
+## 🔑 Default Seed Credentials
 
-**Admin:**
-- Email: `admin@example.com`
-- Password: `password123`
+After running `npm run seed`:
 
-**Student:**
-- Email: `student1@example.com`
-- Password: `password123`
+- **Admin Account**:
+  - Email: `admin@example.com`
+  - Password: `password123`
+- **Student Account**:
+  - Email: `student1@example.com`
+  - Password: `password123`
 
-## Future Enhancements
-- Support for True/False, Fill in the blanks, and multi-select questions.
-- Email notifications for quiz results.
-- Export results to CSV/Excel.
-- Dark mode toggle.
+---
+
+## 🧪 Running Tests
+
+```bash
+# Run unit tests
+npm run test
+
+# Run tests with coverage
+npm run test:coverage
+
+# Run Playwright E2E tests
+npm run test:e2e
+```
+
+---
+
+## 📄 License
+This project is open-source under the MIT License.

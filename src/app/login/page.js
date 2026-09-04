@@ -5,7 +5,8 @@ import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import axios from "axios";
-import { Loader2 } from "lucide-react";
+import { Loader2, Lock, Mail, ArrowRight } from "lucide-react";
+import Logo from "@/components/ui/Logo";
 
 export default function LoginPage() {
   const [error, setError] = useState("");
@@ -16,7 +17,7 @@ export default function LoginPage() {
     try {
       setError("");
       await axios.post("/api/auth/login", data);
-      router.push("/dashboard"); // Middleware will redirect ADMIN to /admin/dashboard
+      router.push("/dashboard");
       router.refresh();
     } catch (err) {
       setError(err.response?.data?.error || "An error occurred during login");
@@ -24,51 +25,66 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-64px)] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-sm border border-gray-100">
-        <div>
-          <h2 className="mt-2 text-center text-3xl font-extrabold text-gray-900">
+    <div className="min-h-[calc(100vh-64px)] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 via-indigo-50/20 to-slate-100">
+      <div className="max-w-md w-full space-y-6 bg-white p-8 sm:p-10 rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-200/80">
+        <div className="text-center space-y-2">
+          <div className="flex justify-center mb-2">
+            <Logo size="large" />
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
             Welcome back
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Sign in to access your dashboard
+          <p className="text-sm text-slate-500">
+            Sign in to continue your assessment journey
           </p>
         </div>
         
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
+          <div className="bg-rose-50 border border-rose-200 text-rose-600 px-4 py-3 rounded-xl text-sm font-medium">
             {error}
           </div>
         )}
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
+        <form className="mt-6 space-y-5" onSubmit={handleSubmit(onSubmit)}>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700" htmlFor="email">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" htmlFor="email">
                 Email Address
               </label>
-              <input
-                id="email"
-                type="email"
-                autoComplete="email"
-                className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${errors.email ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
-                {...register("email", { required: "Email is required" })}
-              />
-              {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>}
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                  <Mail className="h-4 w-4" />
+                </div>
+                <input
+                  id="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                  className={`pl-10 appearance-none relative block w-full px-3.5 py-2.5 border ${errors.email ? 'border-rose-300 ring-1 ring-rose-300' : 'border-slate-300'} placeholder-slate-400 text-slate-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-sm transition-all`}
+                  {...register("email", { required: "Email is required" })}
+                />
+              </div>
+              {errors.email && <p className="mt-1 text-xs text-rose-600 font-medium">{errors.email.message}</p>}
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700" htmlFor="password">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" htmlFor="password">
                 Password
               </label>
-              <input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${errors.password ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
-                {...register("password", { required: "Password is required" })}
-              />
-              {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>}
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                  <Lock className="h-4 w-4" />
+                </div>
+                <input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  className={`pl-10 appearance-none relative block w-full px-3.5 py-2.5 border ${errors.password ? 'border-rose-300 ring-1 ring-rose-300' : 'border-slate-300'} placeholder-slate-400 text-slate-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-sm transition-all`}
+                  {...register("password", { required: "Password is required" })}
+                />
+              </div>
+              {errors.password && <p className="mt-1 text-xs text-rose-600 font-medium">{errors.password.message}</p>}
             </div>
           </div>
 
@@ -76,15 +92,22 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-400"
+              className="group relative w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-500/25 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-400 active:scale-95 transition-all"
             >
-              {isSubmitting ? <Loader2 className="animate-spin h-5 w-5" /> : "Sign in"}
+              {isSubmitting ? (
+                <Loader2 className="animate-spin h-5 w-5" />
+              ) : (
+                <>
+                  <span>Sign in</span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                </>
+              )}
             </button>
           </div>
           
-          <div className="text-center text-sm">
-            <span className="text-gray-600">Don&apos;t have an account? </span>
-            <Link href="/register" className="font-medium text-indigo-600 hover:text-indigo-500">
+          <div className="text-center text-sm pt-2">
+            <span className="text-slate-500">Don&apos;t have an account? </span>
+            <Link href="/register" className="font-bold text-indigo-600 hover:text-indigo-700">
               Sign up
             </Link>
           </div>
@@ -93,3 +116,4 @@ export default function LoginPage() {
     </div>
   );
 }
+
