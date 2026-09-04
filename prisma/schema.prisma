@@ -1,0 +1,126 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String     @id @default(uuid())
+  name         String
+  email        String     @unique
+  passwordHash String
+  role         Role       @default(STUDENT)
+  status       UserStatus @default(ACTIVE)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  attempts     Attempt[]
+}
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  quizzes     Quiz[]
+}
+
+model Quiz {
+  id           String     @id @default(uuid())
+  title        String
+  description  String?
+  categoryId   String
+  difficulty   Difficulty @default(MEDIUM)
+  duration     Int
+  passingScore Int
+  maxAttempts  Int        @default(1)
+  status       QuizStatus @default(DRAFT)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  attempts     Attempt[]
+  questions    Question[]
+  category     Category   @relation(fields: [categoryId], references: [id])
+}
+
+model Question {
+  id           String     @id @default(uuid())
+  quizId       String
+  questionText String
+  marks        Int        @default(1)
+  explanation  String?
+  difficulty   Difficulty @default(MEDIUM)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  answers      Answer[]
+  options      Option[]
+  quiz         Quiz       @relation(fields: [quizId], references: [id], onDelete: Cascade)
+}
+
+model Option {
+  id         String   @id @default(uuid())
+  questionId String
+  optionText String
+  isCorrect  Boolean  @default(false)
+  answers    Answer[]
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+}
+
+model Attempt {
+  id               String        @id @default(uuid())
+  quizId           String
+  userId           String
+  score            Float?
+  percentage       Float?
+  correctAnswers   Int?
+  incorrectAnswers Int?
+  unanswered       Int?
+  timeTaken        Int?
+  status           AttemptStatus @default(IN_PROGRESS)
+  startedAt        DateTime      @default(now())
+  completedAt      DateTime?
+  answers          Answer[]
+  quiz             Quiz          @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Answer {
+  id               String   @id @default(uuid())
+  attemptId        String
+  questionId       String
+  selectedOptionId String?
+  isCorrect        Boolean?
+  attempt          Attempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question         Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selectedOption   Option?  @relation(fields: [selectedOptionId], references: [id])
+}
+
+enum Role {
+  ADMIN
+  STUDENT
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum QuizStatus {
+  DRAFT
+  PUBLISHED
+  UNPUBLISHED
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  COMPLETED
+  EXPIRED
+}
