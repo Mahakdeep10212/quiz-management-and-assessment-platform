@@ -1,7 +1,7 @@
 import { SignJWT, jwtVerify } from 'jose';
 import bcrypt from 'bcrypt';
 
-const secretKey = process.env.AUTH_SECRET;
+const secretKey = process.env.AUTH_SECRET || 'skillpulse-super-secret-jwt-key-32-chars-minimum';
 const key = new TextEncoder().encode(secretKey);
 
 export async function hashPassword(password) {

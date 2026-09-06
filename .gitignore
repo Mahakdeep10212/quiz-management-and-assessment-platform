@@ -58,3 +58,6 @@ next-env.d.ts
 
 # Local development scripts
 query_cats.js
+
+# Local embedded database data
+prisma/pgdata/

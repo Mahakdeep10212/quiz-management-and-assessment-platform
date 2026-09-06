@@ -1,10 +1,10 @@
 # SkillPulse - Intelligent Quiz & Online Assessment Platform
 
-A production-grade, full-stack online quiz and skill assessment platform built with Next.js 15, React 19, Tailwind CSS, Prisma, and PostgreSQL.
+A production-grade, full-stack online quiz and skill assessment platform built with Next.js 16, React 19, Tailwind CSS, Prisma, and PostgreSQL.
 
 [![Repository](https://img.shields.io/badge/GitHub-SkillPulse-indigo.svg)](https://github.com/Mahakdeep10212/quiz-management-and-assessment-platform)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black.svg)](https://nextjs.org/)
 
 ---
 
@@ -27,10 +27,10 @@ A production-grade, full-stack online quiz and skill assessment platform built w
 
 ## 🛠 Tech Stack
 
-- **Frontend**: Next.js 15 (App Router), React 19, Tailwind CSS, Lucide Icons, Recharts, React Hook Form
+- **Frontend**: Next.js 16 (App Router), React 19, Tailwind CSS, Lucide Icons, Recharts, React Hook Form
 - **Backend**: Next.js Route Handlers (Edge & Node runtime)
-- **Database**: PostgreSQL
-- **ORM**: Prisma Client & Prisma Migrate
+- **Database**: PostgreSQL (Native or Zero-Config Embedded PGlite)
+- **ORM**: Prisma Client & Prisma Migrate with `@prisma/adapter-pg`
 - **Authentication**: Custom JWT encryption (`jose`), bcrypt password hashing, and secure HTTP-only cookies
 - **Testing**: Vitest, React Testing Library, and Playwright E2E
 
@@ -46,21 +46,28 @@ npm install
 ```
 
 ### 2. Configure Environment Variables
-Create a `.env` file in the project root:
+Create a `.env` file in the project root (default configuration works out of the box with the embedded database):
 ```env
-DATABASE_URL="postgresql://username:password@localhost:5432/skillpulse?schema=public"
-AUTH_SECRET="your-super-secret-jwt-key-change-this"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/skillpulse?schema=public"
+AUTH_SECRET="skillpulse-super-secret-jwt-key-32-chars-minimum"
 ```
 
-### 3. Initialize the Database
+### 3. Start Database & Initialize Data
+
+You can run SkillPulse with **zero external database setup** using the built-in embedded PostgreSQL server:
+
+#### Terminal 1: Start the Embedded Database Server
 ```bash
-# Push schema to PostgreSQL
-npx prisma db push
+npm run db:start
+```
+> *Note: If you have your own external PostgreSQL server (e.g. Supabase, Neon, or local PostgreSQL), simply set its connection string in `.env` and skip `npm run db:start`.*
 
-# Generate Prisma client
-npx prisma generate
+#### Terminal 2: Initialize Schema & Seed
+```bash
+# Push schema to database
+npm run db:push
 
-# Seed sample categories, quizzes, and questions
+# Seed categories, 27 comprehensive quizzes, questions, and demo users
 npm run seed
 ```
 
