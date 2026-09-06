@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useParams, useRouter } from "next/navigation";
-import { Loader2, CheckCircle, XCircle, ArrowLeft, LayoutDashboard, Clock, AlertTriangle } from "lucide-react";
+import { Loader2, CheckCircle, XCircle, ArrowLeft, LayoutDashboard, Clock, AlertTriangle, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { formatTime } from "@/lib/utils";
 
@@ -13,6 +13,23 @@ export default function ResultsPage() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // AI Tutor state
+  const [aiExplanations, setAiExplanations] = useState({});
+  const [aiLoading, setAiLoading] = useState({});
+
+  const handleAskAiTutor = async (questionId, selectedOptionId) => {
+    if (aiExplanations[questionId]) return;
+    setAiLoading(prev => ({ ...prev, [questionId]: true }));
+    try {
+      const res = await axios.post("/api/ai/explain", { questionId, selectedOptionId });
+      setAiExplanations(prev => ({ ...prev, [questionId]: res.data.explanation }));
+    } catch (err) {
+      setAiExplanations(prev => ({ ...prev, [questionId]: "AI tutor is temporarily busy. Please try again in a moment." }));
+    } finally {
+      setAiLoading(prev => ({ ...prev, [questionId]: false }));
+    }
+  };
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -175,6 +192,41 @@ export default function ResultsPage() {
                       <p>{question.explanation}</p>
                     </div>
                   )}
+
+                  {/* Interactive AI Tutor Section */}
+                  <div className="mt-3">
+                    {!aiExplanations[question.id] ? (
+                      <button
+                        onClick={() => handleAskAiTutor(question.id, studentAnswer?.selectedOptionId)}
+                        disabled={aiLoading[question.id]}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg bg-gradient-to-r from-purple-50 via-indigo-50 to-blue-50 border border-indigo-200/80 text-indigo-700 hover:from-purple-100 hover:to-indigo-100 transition-all shadow-xs disabled:opacity-60 cursor-pointer"
+                      >
+                        {aiLoading[question.id] ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-600" />
+                            <span>AI Tutor is analyzing your answer...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                            <span>Ask AI Tutor for Deep Breakdown</span>
+                          </>
+                        )}
+                      </button>
+                    ) : (
+                      <div className="bg-gradient-to-br from-purple-50/70 via-indigo-50/50 to-white border border-purple-200/70 rounded-xl p-4 text-sm text-slate-800 shadow-xs relative">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-6 h-6 rounded-md bg-purple-600 text-white flex items-center justify-center text-xs">
+                            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                          </div>
+                          <span className="text-xs font-bold uppercase tracking-wider text-purple-900">AI Tutor Pedagogical Insights</span>
+                        </div>
+                        <div className="whitespace-pre-line leading-relaxed text-slate-700 text-xs sm:text-sm">
+                          {aiExplanations[question.id]}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               );
             })}

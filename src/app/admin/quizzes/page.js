@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { Plus, Edit2, Trash2, Loader2, X, Eye, List } from "lucide-react";
+import { Plus, Edit2, Trash2, Loader2, X, Eye, List, Sparkles } from "lucide-react";
 import Link from "next/link";
 
 export default function QuizzesPage() {
@@ -11,6 +11,18 @@ export default function QuizzesPage() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingQuiz, setEditingQuiz] = useState(null);
+
+  // AI Modal State
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiError, setAiError] = useState("");
+  const [aiSuccess, setAiSuccess] = useState("");
+  const [aiFormData, setAiFormData] = useState({
+    topic: "",
+    difficulty: "MEDIUM",
+    questionCount: 5,
+    categoryId: ""
+  });
   
   const [formData, setFormData] = useState({
     title: "",
@@ -123,6 +135,31 @@ export default function QuizzesPage() {
     }
   };
 
+  const handleGenerateAiQuiz = async (e) => {
+    e.preventDefault();
+    if (!aiFormData.topic.trim()) {
+      setAiError("Please enter a topic for the AI quiz");
+      return;
+    }
+    setAiGenerating(true);
+    setAiError("");
+    setAiSuccess("");
+    try {
+      const res = await axios.post("/api/ai/generate-quiz", aiFormData);
+      setAiSuccess(`Successfully generated "${res.data.quiz.title}" with ${res.data.quiz.questions?.length || aiFormData.questionCount} questions!`);
+      setTimeout(() => {
+        setIsAiModalOpen(false);
+        setAiSuccess("");
+        setAiFormData({ topic: "", difficulty: "MEDIUM", questionCount: 5, categoryId: "" });
+        fetchData();
+      }, 1500);
+    } catch (err) {
+      setAiError(err.response?.data?.error || "AI generation failed. Please try again.");
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
   const getStatusBadge = (status) => {
     switch(status) {
       case 'PUBLISHED': return <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Published</span>;
@@ -134,15 +171,31 @@ export default function QuizzesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Quizzes</h1>
-        <button
-          onClick={() => handleOpenModal()}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-        >
-          <Plus className="w-4 h-4" />
-          Create Quiz
-        </button>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Quizzes</h1>
+          <p className="text-xs text-gray-500 mt-1">Manage assessment tracks or generate instant question banks with AI</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              setAiError("");
+              setAiSuccess("");
+              setIsAiModalOpen(true);
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 text-white rounded-md hover:opacity-95 shadow-sm font-medium transition-all"
+          >
+            <Sparkles className="w-4 h-4 text-amber-300" />
+            Generate with AI
+          </button>
+          <button
+            onClick={() => handleOpenModal()}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 font-medium"
+          >
+            <Plus className="w-4 h-4" />
+            Create Manual Quiz
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -340,6 +393,135 @@ export default function QuizzesPage() {
                   className="inline-flex justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400"
                 >
                   {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Save"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      {/* AI Quiz Generator Modal */}
+      {isAiModalOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-indigo-100 relative overflow-hidden">
+            <div className="absolute -right-12 -top-12 w-36 h-36 bg-gradient-to-br from-purple-400/20 to-indigo-400/20 rounded-full blur-2xl pointer-events-none" />
+
+            <div className="flex justify-between items-start mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-500/20">
+                  <Sparkles className="w-5 h-5 text-amber-300" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">AI Quiz Generator</h2>
+                  <p className="text-xs text-gray-500">Auto-generate comprehensive questions with Gemini AI</p>
+                </div>
+              </div>
+              <button
+                onClick={() => !aiGenerating && setIsAiModalOpen(false)}
+                disabled={aiGenerating}
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 disabled:opacity-50"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {aiError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+                {aiError}
+              </div>
+            )}
+
+            {aiSuccess && (
+              <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg text-sm font-medium">
+                {aiSuccess}
+              </div>
+            )}
+
+            <form onSubmit={handleGenerateAiQuiz} className="space-y-5">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Topic or Subject Prompt <span className="text-indigo-600">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Docker & Containers, React 19 Hooks, System Design..."
+                  disabled={aiGenerating}
+                  value={aiFormData.topic}
+                  onChange={(e) => setAiFormData({ ...aiFormData, topic: e.target.value })}
+                  className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl shadow-xs text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100"
+                />
+                <p className="text-xs text-gray-500 mt-1">AI will synthesize questions, multiple-choice options, and pedagogical rationales.</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Difficulty Level</label>
+                  <select
+                    disabled={aiGenerating}
+                    value={aiFormData.difficulty}
+                    onChange={(e) => setAiFormData({ ...aiFormData, difficulty: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
+                  >
+                    <option value="EASY">Easy (Foundational)</option>
+                    <option value="MEDIUM">Medium (Intermediate)</option>
+                    <option value="HARD">Hard (Advanced)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Question Count</label>
+                  <select
+                    disabled={aiGenerating}
+                    value={aiFormData.questionCount}
+                    onChange={(e) => setAiFormData({ ...aiFormData, questionCount: Number(e.target.value) })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
+                  >
+                    <option value={3}>3 Questions (Quick)</option>
+                    <option value={5}>5 Questions (Standard)</option>
+                    <option value={10}>10 Questions (Deep Dive)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Category</label>
+                <select
+                  disabled={aiGenerating}
+                  value={aiFormData.categoryId}
+                  onChange={(e) => setAiFormData({ ...aiFormData, categoryId: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
+                >
+                  <option value="">Auto-assign (AI Assessments)</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="pt-3 flex justify-end gap-3 border-t border-gray-100">
+                <button
+                  type="button"
+                  disabled={aiGenerating}
+                  onClick={() => setIsAiModalOpen(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={aiGenerating}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:opacity-95 shadow-md shadow-indigo-500/20 disabled:opacity-60 transition-all"
+                >
+                  {aiGenerating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Synthesizing with AI...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 text-amber-300" />
+                      <span>Generate Quiz Now</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>

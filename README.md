@@ -10,6 +10,10 @@ A production-grade, full-stack online quiz and skill assessment platform built w
 
 ## ⚡ Highlights & Features
 
+### 🤖 Generative AI Capabilities
+- **✨ AI Quiz & Question Generator**: Synthesize complete assessment modules (questions, options, correct answers, and rich explanations) for any custom topic in seconds using Google Gemini with structured JSON output enforcement.
+- **🧠 Interactive AI Tutor**: Personalized post-exam feedback assistant that breaks down candidate misconceptions, explains underlying principles, and provides memory aids for any question.
+
 ### 👨‍💼 For Administrators
 - **Real-Time Analytics & Dashboard**: Visual KPI metrics, attempt distribution charts, and completion stats powered by Recharts.
 - **Category & Topic Management**: Create, update, and manage customizable domain modules.
@@ -28,6 +32,7 @@ A production-grade, full-stack online quiz and skill assessment platform built w
 ## 🛠 Tech Stack
 
 - **Frontend**: Next.js 16 (App Router), React 19, Tailwind CSS, Lucide Icons, Recharts, React Hook Form
+- **AI & LLM**: Google Gemini API (`gemini-2.5-flash`), OpenAI API, Structured Prompt Engineering
 - **Backend**: Next.js Route Handlers (Edge & Node runtime)
 - **Database**: PostgreSQL (Native or Zero-Config Embedded PGlite)
 - **ORM**: Prisma Client & Prisma Migrate with `@prisma/adapter-pg`
