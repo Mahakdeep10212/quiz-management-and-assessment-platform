@@ -5,6 +5,14 @@ import { decrypt } from "@/lib/auth";
 
 export async function GET(request, { params }) {
   try {
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get("session")?.value;
+    const session = sessionCookie ? await decrypt(sessionCookie) : null;
+
+    if (!session || session.role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
     const resolvedParams = await params;
     const questions = await prisma.question.findMany({
       where: { quizId: resolvedParams.id },

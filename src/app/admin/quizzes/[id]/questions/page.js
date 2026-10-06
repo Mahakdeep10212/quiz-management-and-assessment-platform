@@ -59,7 +59,7 @@ export default function QuestionsPage() {
         marks: question.marks,
         explanation: question.explanation || "",
         difficulty: question.difficulty,
-        options: question.options.map(o => ({ optionText: o.optionText, isCorrect: o.isCorrect }))
+        options: question.options.map(o => ({ id: o.id, optionText: o.optionText, isCorrect: o.isCorrect }))
       });
     } else {
       setEditingQuestion(null);

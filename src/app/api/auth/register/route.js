@@ -1,9 +1,21 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { hashPassword } from '@/lib/auth';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(request) {
   try {
+    const clientIp = getClientIp(request);
+    const rateLimit = checkRateLimit(`register:${clientIp}`, 5, 60 * 60 * 1000);
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { error: 'Too many accounts created from this IP. Please try again later.' },
+        { status: 429 }
+      );
+    }
+
     const { name, email, password } = await request.json();
 
     if (!name || !email || !password) {
@@ -13,30 +25,47 @@ export async function POST(request) {
       );
     }
 
-    if (password.length < 6) {
+    const trimmedName = String(name).trim();
+    const normalizedEmail = String(email).trim().toLowerCase();
+
+    if (trimmedName.length < 2) {
       return NextResponse.json(
-        { error: 'Password must be at least 6 characters long' },
+        { error: 'Name must be at least 2 characters long' },
+        { status: 400 }
+      );
+    }
+
+    if (!EMAIL_REGEX.test(normalizedEmail)) {
+      return NextResponse.json(
+        { error: 'Please provide a valid email address' },
+        { status: 400 }
+      );
+    }
+
+    if (String(password).length < 8) {
+      return NextResponse.json(
+        { error: 'Password must be at least 8 characters long for security' },
         { status: 400 }
       );
     }
 
     const existingUser = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
     if (existingUser) {
       return NextResponse.json(
-        { error: 'User with this email already exists' },
+        { error: 'An account with this email address already exists' },
         { status: 400 }
       );
     }
 
     const passwordHash = await hashPassword(password);
 
-    const user = await prisma.user.create({
+    await prisma.user.create({
       data: {
-        name,
-        email,
+        name: trimmedName,
+        email: normalizedEmail,
         passwordHash,
         role: 'STUDENT',
       },

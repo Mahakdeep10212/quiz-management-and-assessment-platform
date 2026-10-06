@@ -17,6 +17,8 @@ model User {
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
   attempts     Attempt[]
+
+  @@index([role, status])
 }
 
 model Category {
@@ -43,6 +45,10 @@ model Quiz {
   attempts     Attempt[]
   questions    Question[]
   category     Category   @relation(fields: [categoryId], references: [id])
+
+  @@index([categoryId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model Question {
@@ -57,6 +63,8 @@ model Question {
   answers      Answer[]
   options      Option[]
   quiz         Quiz       @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@index([quizId])
 }
 
 model Option {
@@ -66,6 +74,8 @@ model Option {
   isCorrect  Boolean  @default(false)
   answers    Answer[]
   question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
 }
 
 model Attempt {
@@ -84,6 +94,11 @@ model Attempt {
   answers          Answer[]
   quiz             Quiz          @relation(fields: [quizId], references: [id], onDelete: Cascade)
   user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([quizId, status])
+  @@index([startedAt])
+  @@index([completedAt])
 }
 
 model Answer {
@@ -94,7 +109,11 @@ model Answer {
   isCorrect        Boolean?
   attempt          Attempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
   question         Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  selectedOption   Option?  @relation(fields: [selectedOptionId], references: [id])
+  selectedOption   Option?  @relation(fields: [selectedOptionId], references: [id], onDelete: SetNull)
+
+  @@unique([attemptId, questionId])
+  @@index([attemptId])
+  @@index([questionId])
 }
 
 enum Role {

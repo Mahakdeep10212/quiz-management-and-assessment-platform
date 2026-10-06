@@ -6,6 +6,11 @@ import { decrypt } from "@/lib/auth";
 export async function GET(request, { params }) {
   try {
     const resolvedParams = await params;
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get("session")?.value;
+    const session = sessionCookie ? await decrypt(sessionCookie) : null;
+    const isAdmin = session?.role === "ADMIN";
+
     const quiz = await prisma.quiz.findUnique({
       where: { id: resolvedParams.id },
       include: {
@@ -20,6 +25,26 @@ export async function GET(request, { params }) {
 
     if (!quiz) {
       return NextResponse.json({ error: "Quiz not found" }, { status: 404 });
+    }
+
+    if (!isAdmin) {
+      if (quiz.status !== "PUBLISHED") {
+        return NextResponse.json({ error: "Quiz not found" }, { status: 404 });
+      }
+      // Strip correct answers and explanations for non-admins
+      const sanitizedQuestions = quiz.questions.map((q) => ({
+        id: q.id,
+        quizId: q.quizId,
+        questionText: q.questionText,
+        marks: q.marks,
+        difficulty: q.difficulty,
+        options: q.options.map((opt) => ({
+          id: opt.id,
+          questionId: opt.questionId,
+          optionText: opt.optionText
+        }))
+      }));
+      return NextResponse.json({ ...quiz, questions: sanitizedQuestions });
     }
 
     return NextResponse.json(quiz);

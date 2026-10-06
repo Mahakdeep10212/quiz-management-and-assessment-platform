@@ -17,15 +17,20 @@ export default function ResultsPage() {
   // AI Tutor state
   const [aiExplanations, setAiExplanations] = useState({});
   const [aiLoading, setAiLoading] = useState({});
+  const [aiErrors, setAiErrors] = useState({});
 
   const handleAskAiTutor = async (questionId, selectedOptionId) => {
     if (aiExplanations[questionId]) return;
     setAiLoading(prev => ({ ...prev, [questionId]: true }));
+    setAiErrors(prev => ({ ...prev, [questionId]: null }));
     try {
       const res = await axios.post("/api/ai/explain", { questionId, selectedOptionId });
       setAiExplanations(prev => ({ ...prev, [questionId]: res.data.explanation }));
     } catch (err) {
-      setAiExplanations(prev => ({ ...prev, [questionId]: "AI tutor is temporarily busy. Please try again in a moment." }));
+      setAiErrors(prev => ({
+        ...prev,
+        [questionId]: err.response?.data?.error || "AI tutor is temporarily busy. Please try again."
+      }));
     } finally {
       setAiLoading(prev => ({ ...prev, [questionId]: false }));
     }
@@ -195,6 +200,18 @@ export default function ResultsPage() {
 
                   {/* Interactive AI Tutor Section */}
                   <div className="mt-3">
+                    {aiErrors[question.id] && (
+                      <div className="mb-2 p-2.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 flex items-center justify-between">
+                        <span>{aiErrors[question.id]}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleAskAiTutor(question.id, studentAnswer?.selectedOptionId)}
+                          className="ml-2 px-2.5 py-1 bg-red-100 hover:bg-red-200 rounded text-red-800 font-semibold cursor-pointer"
+                        >
+                          Retry
+                        </button>
+                      </div>
+                    )}
                     {!aiExplanations[question.id] ? (
                       <button
                         onClick={() => handleAskAiTutor(question.id, studentAnswer?.selectedOptionId)}

@@ -17,7 +17,7 @@ export function calculateScore(questions, answers) {
     if (!selectedOptionId) {
       unansweredCount++;
     } else {
-      if (selectedOptionId === correctOption.id) {
+      if (correctOption && selectedOptionId === correctOption.id) {
         isCorrect = true;
         correctCount++;
         obtainedMarks += question.marks;

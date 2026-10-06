@@ -25,26 +25,66 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: "Exactly one correct option is required" }, { status: 400 });
     }
 
-    // We delete existing options and create new ones for simplicity instead of diffing
-    const question = await prisma.question.update({
-      where: { id: resolvedParams.id },
-      data: {
-        questionText,
-        marks: parseInt(marks) || 1,
-        explanation,
-        difficulty,
-        options: {
-          deleteMany: {},
-          create: options.map(opt => ({
-            optionText: opt.optionText,
-            isCorrect: opt.isCorrect
-          }))
-        }
-      },
-      include: { options: true }
+    // Safely update question and options without breaking existing student attempt answers
+    const existingOptions = await prisma.option.findMany({
+      where: { questionId: resolvedParams.id }
     });
 
-    return NextResponse.json(question);
+    const updatedQuestion = await prisma.$transaction(async (tx) => {
+      await tx.question.update({
+        where: { id: resolvedParams.id },
+        data: {
+          questionText,
+          marks: parseInt(marks) || 1,
+          explanation,
+          difficulty
+        }
+      });
+
+      // Update existing options or create new ones
+      for (let i = 0; i < options.length; i++) {
+        const opt = options[i];
+        const existing = opt.id 
+          ? existingOptions.find(eo => eo.id === opt.id) 
+          : existingOptions[i];
+
+        if (existing) {
+          await tx.option.update({
+            where: { id: existing.id },
+            data: {
+              optionText: opt.optionText,
+              isCorrect: Boolean(opt.isCorrect)
+            }
+          });
+        } else {
+          await tx.option.create({
+            data: {
+              questionId: resolvedParams.id,
+              optionText: opt.optionText,
+              isCorrect: Boolean(opt.isCorrect)
+            }
+          });
+        }
+      }
+
+      // If fewer options were provided, delete unreferenced leftover options
+      if (existingOptions.length > options.length) {
+        const remainingExisting = existingOptions.slice(options.length);
+        for (const rem of remainingExisting) {
+          const answerCount = await tx.answer.count({ where: { selectedOptionId: rem.id } });
+          if (answerCount === 0) {
+            await tx.option.delete({ where: { id: rem.id } });
+          }
+        }
+      }
+
+      return tx.question.findUnique({
+        where: { id: resolvedParams.id },
+        include: { options: true }
+      });
+    });
+
+    return NextResponse.json(updatedQuestion);
   } catch (error) {
     return NextResponse.json({ error: "Failed to update question" }, { status: 500 });
   }

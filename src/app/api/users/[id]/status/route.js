@@ -42,6 +42,10 @@ export async function DELETE(request, { params }) {
     }
 
     const resolvedParams = await params;
+    if (resolvedParams.id === session.userId) {
+      return NextResponse.json({ error: "You cannot delete your own admin account" }, { status: 400 });
+    }
+
     await prisma.user.delete({
       where: { id: resolvedParams.id }
     });

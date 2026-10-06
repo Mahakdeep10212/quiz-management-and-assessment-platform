@@ -22,7 +22,35 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: "Quiz not found or not published" }, { status: 404 });
     }
 
-    // Check attempts
+    // Check if there's an existing IN_PROGRESS attempt
+    let activeAttempt = await prisma.attempt.findFirst({
+      where: {
+        quizId: quiz.id,
+        userId: session.userId,
+        status: 'IN_PROGRESS'
+      }
+    });
+
+    // If an in-progress attempt exists but its time expired while the user was away, finalize it
+    if (activeAttempt) {
+      const startedAt = new Date(activeAttempt.startedAt).getTime();
+      const durationMs = quiz.duration * 60 * 1000;
+      const now = Date.now();
+      if (now > startedAt + durationMs + 10000) {
+        await prisma.attempt.update({
+          where: { id: activeAttempt.id },
+          data: {
+            status: "EXPIRED",
+            score: 0,
+            percentage: 0,
+            completedAt: new Date(startedAt + durationMs)
+          }
+        });
+        activeAttempt = null;
+      }
+    }
+
+    // Check attempts count for completed/expired attempts
     const attemptsCount = await prisma.attempt.count({
       where: {
         quizId: quiz.id,
@@ -31,18 +59,9 @@ export async function POST(request, { params }) {
       }
     });
 
-    if (attemptsCount >= quiz.maxAttempts) {
+    if (!activeAttempt && attemptsCount >= quiz.maxAttempts) {
       return NextResponse.json({ error: "Maximum attempts reached" }, { status: 403 });
     }
-
-    // Check if there's an IN_PROGRESS attempt
-    let activeAttempt = await prisma.attempt.findFirst({
-      where: {
-        quizId: quiz.id,
-        userId: session.userId,
-        status: 'IN_PROGRESS'
-      }
-    });
 
     if (!activeAttempt) {
       activeAttempt = await prisma.attempt.create({

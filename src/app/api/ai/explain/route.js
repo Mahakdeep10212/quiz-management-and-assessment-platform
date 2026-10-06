@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { decrypt } from "@/lib/auth";
 import { explainWithAI } from "@/lib/ai";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 export async function POST(request) {
   try {
@@ -12,6 +13,16 @@ export async function POST(request) {
 
     if (!session) {
       return NextResponse.json({ error: "Unauthorized. Please log in." }, { status: 401 });
+    }
+
+    if (session.role !== "ADMIN") {
+      const rateLimit = checkRateLimit(`ai-explain:${session.userId}`, 20, 60 * 60 * 1000);
+      if (!rateLimit.success) {
+        return NextResponse.json(
+          { error: "Hourly AI tutor quota reached (20 requests/hour). Please try again later." },
+          { status: 429 }
+        );
+      }
     }
 
     const { questionId, selectedOptionId } = await request.json();
@@ -27,6 +38,38 @@ export async function POST(request) {
 
     if (!question) {
       return NextResponse.json({ error: "Question not found" }, { status: 404 });
+    }
+
+    if (session.role !== "ADMIN") {
+      // Prevent cheating: verify student doesn't have an active unsubmitted attempt for this quiz
+      const activeAttempt = await prisma.attempt.findFirst({
+        where: {
+          quizId: question.quizId,
+          userId: session.userId,
+          status: "IN_PROGRESS"
+        }
+      });
+      if (activeAttempt) {
+        return NextResponse.json(
+          { error: "AI tutor is disabled while an exam attempt is in progress." },
+          { status: 403 }
+        );
+      }
+
+      // Ensure the student actually completed an attempt for this quiz before asking for explanations
+      const finishedAttempt = await prisma.attempt.findFirst({
+        where: {
+          quizId: question.quizId,
+          userId: session.userId,
+          status: { in: ["COMPLETED", "EXPIRED"] }
+        }
+      });
+      if (!finishedAttempt) {
+        return NextResponse.json(
+          { error: "You may only request explanations after completing the quiz." },
+          { status: 403 }
+        );
+      }
     }
 
     const correctOption = question.options.find((o) => o.isCorrect);

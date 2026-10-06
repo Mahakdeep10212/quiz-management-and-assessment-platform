@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Clock, BarChart, CheckCircle, AlertCircle, ArrowLeft } from "lucide-react";
 import { cookies } from "next/headers";
 import { decrypt } from "@/lib/auth";
+import StartQuizButton from "@/components/ui/StartQuizButton";
 
 export default async function QuizDetailsPage({ params }) {
   const resolvedParams = await params;
@@ -112,11 +113,7 @@ export default async function QuizDetailsPage({ params }) {
                 <p className="text-red-800 font-medium">You have reached the maximum number of attempts for this quiz.</p>
               </div>
             ) : (
-              <form action={`/api/quizzes/${quiz.id}/start`} method="POST">
-                <button type="submit" className="inline-flex items-center px-8 py-4 border border-transparent text-lg font-bold rounded-full shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-transform transform hover:-translate-y-1">
-                  Start Quiz Now
-                </button>
-              </form>
+              <StartQuizButton quizId={quiz.id} />
             )}
           </div>
         </div>

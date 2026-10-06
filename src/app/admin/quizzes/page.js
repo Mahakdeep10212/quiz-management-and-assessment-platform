@@ -398,6 +398,8 @@ export default function QuizzesPage() {
             </form>
           </div>
         </div>
+      )}
+
       {/* AI Quiz Generator Modal */}
       {isAiModalOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">

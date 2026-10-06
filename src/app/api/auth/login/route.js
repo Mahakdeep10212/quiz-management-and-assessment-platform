@@ -2,9 +2,19 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { comparePassword, encrypt } from '@/lib/auth';
 import { cookies } from 'next/headers';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
 export async function POST(request) {
   try {
+    const clientIp = getClientIp(request);
+    const rateLimit = checkRateLimit(`login:${clientIp}`, 10, 60 * 1000);
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { error: 'Too many login attempts. Please wait a minute before trying again.' },
+        { status: 429 }
+      );
+    }
+
     const { email, password } = await request.json();
 
     if (!email || !password) {
@@ -14,8 +24,10 @@ export async function POST(request) {
       );
     }
 
+    const normalizedEmail = String(email).trim().toLowerCase();
+
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
     if (!user) {

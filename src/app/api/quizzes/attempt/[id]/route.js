@@ -20,7 +20,12 @@ export async function GET(request, { params }) {
         quiz: {
           include: {
             questions: {
-              include: {
+              select: {
+                id: true,
+                questionText: true,
+                marks: true,
+                difficulty: true,
+                quizId: true,
                 options: {
                   select: {
                     id: true,

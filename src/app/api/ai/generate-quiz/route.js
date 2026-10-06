@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { decrypt } from "@/lib/auth";
 import { generateQuizWithAI } from "@/lib/ai";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 export async function POST(request) {
   try {
@@ -12,6 +13,14 @@ export async function POST(request) {
 
     if (!session || session.role !== "ADMIN") {
       return NextResponse.json({ error: "Unauthorized. Admin role required." }, { status: 403 });
+    }
+
+    const rateLimit = checkRateLimit(`ai-gen:${session.userId}`, 15, 10 * 60 * 1000);
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { error: "AI quiz generation rate limit reached (15 quizzes/10 mins). Please try again shortly." },
+        { status: 429 }
+      );
     }
 
     const body = await request.json();

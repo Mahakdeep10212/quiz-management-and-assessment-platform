@@ -9,15 +9,17 @@ export async function generateQuizWithAI({ topic, difficulty = "MEDIUM", questio
 
   if (geminiKey) {
     try {
-      return await generateWithGemini({ topic, difficulty, questionCount, apiKey: geminiKey });
+      const raw = await generateWithGemini({ topic, difficulty, questionCount, apiKey: geminiKey });
+      return validateAndNormalizeQuiz(raw, topic, difficulty, questionCount);
     } catch (err) {
-      console.warn("[AI] Gemini generation failed, switching to fallback generator:", err.message);
+      console.warn("[AI] Gemini generation failed, switching to OpenAI/fallback:", err.message);
     }
   }
 
   if (openaiKey) {
     try {
-      return await generateWithOpenAI({ topic, difficulty, questionCount, apiKey: openaiKey });
+      const raw = await generateWithOpenAI({ topic, difficulty, questionCount, apiKey: openaiKey });
+      return validateAndNormalizeQuiz(raw, topic, difficulty, questionCount);
     } catch (err) {
       console.warn("[AI] OpenAI generation failed, switching to fallback generator:", err.message);
     }
@@ -52,6 +54,7 @@ Keep the response under 150 words, structured with markdown bolding.`;
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          signal: AbortSignal.timeout(15000),
           body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
             generationConfig: { temperature: 0.7, maxOutputTokens: 300 }
@@ -76,6 +79,7 @@ Keep the response under 150 words, structured with markdown bolding.`;
           "Content-Type": "application/json",
           Authorization: `Bearer ${openaiKey}`
         },
+        signal: AbortSignal.timeout(15000),
         body: JSON.stringify({
           model: "gpt-4o-mini",
           messages: [{ role: "user", content: prompt }],
@@ -134,6 +138,7 @@ Ensure exactly 4 options per question with exactly 1 marked isCorrect: true. Ret
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      signal: AbortSignal.timeout(25000),
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
@@ -164,6 +169,7 @@ async function generateWithOpenAI({ topic, difficulty, questionCount, apiKey }) 
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`
     },
+    signal: AbortSignal.timeout(25000),
     body: JSON.stringify({
       model: "gpt-4o-mini",
       response_format: { type: "json_object" },
@@ -178,6 +184,46 @@ async function generateWithOpenAI({ topic, difficulty, questionCount, apiKey }) 
 
 function cleanJsonString(str) {
   return str.replace(/^```json\s*/, "").replace(/\s*```$/, "").trim();
+}
+
+function validateAndNormalizeQuiz(data, topic, difficulty, questionCount) {
+  if (!data || typeof data !== "object") {
+    throw new Error("Invalid AI quiz response: expected JSON object");
+  }
+
+  const rawQuestions = Array.isArray(data.questions) ? data.questions : [];
+  if (rawQuestions.length === 0) {
+    throw new Error("Invalid AI quiz response: missing questions array");
+  }
+
+  const normalizedQuestions = rawQuestions.map((q, idx) => {
+    const rawOptions = Array.isArray(q.options) ? q.options : [];
+    if (rawOptions.length < 2) {
+      throw new Error(`Question ${idx + 1} has fewer than 2 options`);
+    }
+
+    const hasCorrect = rawOptions.some(opt => Boolean(opt.isCorrect));
+    const normalizedOptions = rawOptions.map((opt, optIdx) => ({
+      optionText: String(opt.optionText || opt.text || `Option ${optIdx + 1}`).trim(),
+      isCorrect: hasCorrect ? Boolean(opt.isCorrect) : optIdx === 0
+    }));
+
+    return {
+      questionText: String(q.questionText || q.question || `Question ${idx + 1}`).trim(),
+      difficulty: q.difficulty || difficulty || "MEDIUM",
+      explanation: String(q.explanation || "Correct option is derived from fundamental core principles.").trim(),
+      options: normalizedOptions
+    };
+  });
+
+  return {
+    title: String(data.title || `${topic} Assessment`).trim(),
+    description: String(data.description || `Assessment covering concepts of ${topic}.`).trim(),
+    difficulty: data.difficulty || difficulty || "MEDIUM",
+    duration: parseInt(data.duration, 10) || Math.max(10, normalizedQuestions.length * 2),
+    passingScore: parseInt(data.passingScore, 10) || 60,
+    questions: normalizedQuestions
+  };
 }
 
 function generateFallbackQuiz({ topic, difficulty, questionCount }) {
@@ -272,11 +318,13 @@ function generateFallbackQuiz({ topic, difficulty, questionCount }) {
   const questions = [];
   for (let i = 0; i < count; i++) {
     const template = sampleQuestions[i % sampleQuestions.length];
+    // Randomize option order so correct answer is not predictably always Option A
+    const shuffledOpts = [...template.opts].sort(() => Math.random() - 0.5);
     questions.push({
       questionText: template.q,
       difficulty: diff,
       explanation: template.exp,
-      options: template.opts.map(o => ({
+      options: shuffledOpts.map(o => ({
         optionText: o.t,
         isCorrect: o.c
       }))
